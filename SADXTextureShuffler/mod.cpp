@@ -3,7 +3,9 @@
 #include "FunctionHook.h"
 #include "IniFile.hpp"
 #include <map>
+#include <random>
 
+std::default_random_engine gen;
 int shuffleMode;
 std::map<NJS_TEXLIST*, std::vector<Uint32>> loadedTextures;
 std::vector<Uint32> textureBuffer;
@@ -11,7 +13,7 @@ std::vector<Uint32> textureBuffer;
 void ShuffleTexlist(NJS_TEXLIST* texlist)
 {
 	for (Uint32 i = 0; i < texlist->nbTexture; ++i)
-		std::swap(texlist->textures[i].texaddr, texlist->textures[rand() % texlist->nbTexture].texaddr);
+		std::swap(texlist->textures[i].texaddr, texlist->textures[gen() % texlist->nbTexture].texaddr);
 }
 
 void ShuffleAllTextures()
@@ -26,7 +28,7 @@ void ShuffleAllTextures()
 	}
 	textureBuffer.resize(texcnt);
 	for (size_t i = 0; i < texcnt; ++i)
-		std::swap(textureBuffer[i], textureBuffer[rand() % texcnt]);
+		std::swap(textureBuffer[i], textureBuffer[gen() % texcnt]);
 	texcnt = 0;
 	for (auto& kvp : loadedTextures)
 	{
@@ -91,6 +93,9 @@ extern "C"
 {
 	__declspec(dllexport) void Init(const char* path, const HelperFunctions& helperFunctions)
 	{
+		auto seed = std::random_device()();
+		std::seed_seq seq = { seed };
+		gen.seed(seq);
 		const IniFile* settings = new IniFile(std::string(path) + "\\config.ini");
 		shuffleMode = settings->getInt("", "ShuffleMode", 0);
 		delete settings;
